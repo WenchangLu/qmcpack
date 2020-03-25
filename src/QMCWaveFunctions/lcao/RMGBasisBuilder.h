@@ -29,6 +29,10 @@ namespace qmcplusplus
 template<typename VALT>
 class AOBasisBuilder<RMGBasisSet<VALT>> : public MPIObjectBase
 {
+
+//Cij need to be the same format as LCAO
+//orbitals can be defined by itself. better to be hdf5 format inwhich can be folder files .. 
+//eigenvector and eigenvalues need to have the same format. 
 private:
   using COT = RMGBasisSet<VALT>;
 public:
@@ -44,7 +48,9 @@ public:
   COT* createAOSet(xmlNodePtr cur)
   { }
   COT* createAOSetH5(hdf_archive& hin)
-  { }
+  { 
+    //RMGORBITALS = new COT()
+    }
 };
 
 } // namespace qmcplusplus

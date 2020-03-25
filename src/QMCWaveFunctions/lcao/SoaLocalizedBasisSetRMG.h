@@ -17,6 +17,7 @@
 #ifndef QMCPLUSPLUS_SOA_LOCALIZEDBASISSET_RMG_H
 #define QMCPLUSPLUS_SOA_LOCALIZEDBASISSET_RMG_H
 
+//need a unit test. 
 namespace qmcplusplus
 {
 /** specialization for SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT>
@@ -65,7 +66,7 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
   {
     NumCenters = ions.getTotalNum();
     NumTargets = els.getTotalNum();
-    LOBasisSet.resize(ions.getSpeciesSet().getTotalNum(), 0);
+    LOBasisSet.resize(NumCenters);
     BasisOffset.resize(NumCenters + 1);
     BasisSetSize = 0;
   }
@@ -93,7 +94,7 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
     BasisOffset[0] = 0;
     for (int c = 0; c < NumCenters; c++)
     {
-      BasisOffset[c + 1] = BasisOffset[c] + LOBasisSet[IonID[c]]->getBasisSetSize();
+      BasisOffset[c + 1] = BasisOffset[c] + LOBasisSet[c]->getBasisSetSize();
     }
     BasisSetSize = BasisOffset[NumCenters];
   }
@@ -111,6 +112,22 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
    */
   inline void evaluateVGL(const ParticleSet& P, int iat, vgl_type& vgl)
   {
+    const auto& IonID(ions_.GroupID);
+    const auto& coordR  = P.activeR(iat);
+    const auto& d_table = P.getDistTable(myTableIndex);
+    const auto& dist    = (P.activePtcl == iat) ? d_table.getTempDists() : d_table.getDistRow(iat);
+    const auto& displ   = (P.activePtcl == iat) ? d_table.getTempDispls() : d_table.getDisplRow(iat);
+
+    PosType Tv;
+    for (int c = 0; c < NumCenters; c++)
+    {
+        Tv[0] = (ions_.R[c][0] - coordR[0]) - displ[c][0];
+        Tv[1] = (ions_.R[c][1] - coordR[1]) - displ[c][1];
+        Tv[2] = (ions_.R[c][2] - coordR[2]) - displ[c][2];
+        LOBasisSet[c]->evaluateVGL(P.Lattice, dist[c], displ[c], BasisOffset[c], vgl, Tv);
+    }
+
+
     // Ye: needs implemenation
   }
 
@@ -148,7 +165,21 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
    */
   inline void evaluateV(const ParticleSet& P, int iat, ORBT* restrict vals)
   {
-    // Ye: needs implemenation
+    const auto& IonID(ions_.GroupID);
+    const auto& coordR  = P.activeR(iat);
+    const auto& d_table = P.getDistTable(myTableIndex);
+    const auto& dist    = (P.activePtcl == iat) ? d_table.getTempDists() : d_table.getDistRow(iat);
+    const auto& displ   = (P.activePtcl == iat) ? d_table.getTempDispls() : d_table.getDisplRow(iat);
+
+    PosType Tv;
+    for (int c = 0; c < NumCenters; c++)
+    {
+        Tv[0] = (ions_.R[c][0] - coordR[0]) - displ[c][0];
+        Tv[1] = (ions_.R[c][1] - coordR[1]) - displ[c][1];
+        Tv[2] = (ions_.R[c][2] - coordR[2]) - displ[c][2];
+        LOBasisSet[c]->evaluateV(P.Lattice, dist[c], displ[c], vals + BasisOffset[c], Tv);
+    }
+      // Ye: needs implemenation
   }
 
   inline void evaluateGradSourceV(const ParticleSet& P, int iat, const ParticleSet& ions, int jion, vgl_type& vgl)
