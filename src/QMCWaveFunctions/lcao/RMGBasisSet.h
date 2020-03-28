@@ -29,23 +29,23 @@ private:
   ///size of the basis set
 // numnumber of borbitals. 
   int BasisSetSize;
-  double r0[3]; //left-bottom corner of the orbitals
-  double r1[3]; //right up corner of the orbitals
-  double hgrid[3]; // gridspacing in bohr
+  VALT r0[3]; //left-bottom corner of the orbitals
+  VALT r1[3]; //right up corner of the orbitals
+  VALT hgrid[3]; // gridspacing in bohr
   int num_grid[3]; // number of grid in x, y, z director
-  std::vector<VALT *> Vgrids;
-  std::vector<VALT *> Vgrids_x;
-  std::vector<VALT *> Vgrids_y;
-  std::vector<VALT *> Vgrids_z;
-  std::vector<VALT *> Vgrids_L;
-
 public:
+  std::vector<std::vector<VALT>> Vgrids;
+  std::vector<std::vector<VALT>> Vgrids_x;
+  std::vector<std::vector<VALT>> Vgrids_y;
+  std::vector<std::vector<VALT>> Vgrids_z;
+  std::vector<std::vector<VALT>> Vgrids_L;
+
   RMGBasisSet<VALT>* makeClone() const
   {
     return new RMGBasisSet(*this);
   }
 
-  void setBasisSet(int num_orbitals_thiscenter, double r0_in[3], double hgrid_in[3], int num_grid_in[3])
+  RMGBasisSet<VALT>(int num_orbitals_thiscenter, double r0_in[3], double hgrid_in[3], int num_grid_in[3])
   {
     for(int i = 0; i < 3; i++)
     {
@@ -64,11 +64,11 @@ public:
 
     for(int ib = 0; ib < BasisSetSize; ib++)
     {
-        Vgrids[ib] = new VALT[num_grid[0] * num_grid[1] * num_grid[2]];
-        Vgrids_x[ib] = new VALT[num_grid[0] * num_grid[1] * num_grid[2]];
-        Vgrids_y[ib] = new VALT[num_grid[0] * num_grid[1] * num_grid[2]];
-        Vgrids_z[ib] = new VALT[num_grid[0] * num_grid[1] * num_grid[2]];
-        Vgrids_L[ib] = new VALT[num_grid[0] * num_grid[1] * num_grid[2]];
+        Vgrids[ib].resize  (num_grid[0] * num_grid[1] * num_grid[2]);
+        Vgrids_x[ib].resize(num_grid[0] * num_grid[1] * num_grid[2]);
+        Vgrids_y[ib].resize(num_grid[0] * num_grid[1] * num_grid[2]);
+        Vgrids_z[ib].resize(num_grid[0] * num_grid[1] * num_grid[2]);
+        Vgrids_L[ib].resize(num_grid[0] * num_grid[1] * num_grid[2]);
     }
 
   }
@@ -99,7 +99,7 @@ public:
 
           //   values, gradients, Laplacian
 
-          double Val[3], disp[3];
+          double Val[3], disp[3]{0.0, 0.0, 0.0};
           int grid_pos[3]{-1,-1,-1};
          //check where the real space point dr map to the orbital's real space grid and displacment.
           for(int i = -1; i <= 1; i++)
@@ -173,7 +173,7 @@ public:
       inline void evaluateV(const LAT& lattice, const T r, const PosType& dr, VT* restrict phi,PosType Tv)
       {
           // must be implemented. interface arguments needs change
-          double Val[3], disp[3];
+          double Val[3], disp[3]{0.0, 0.0, 0.0};
           int grid_pos[3]{-1,-1,-1};
          //check where the real space point dr map to the orbital's real space grid and displacment.
           for(int i = -1; i <= 1; i++)
@@ -217,7 +217,7 @@ public:
           // must be implemented. interface arguments needs change
       }
 
-  VALT interpolate_value(int grid_pos[3], double disp[3], VALT *vgrids)
+  VALT interpolate_value(int grid_pos[3], double disp[3], std::vector<VALT> vgrids)
   {
       // at the boundary all values are zero
       if(grid_pos[0] < 2 || grid_pos[0] > num_grid[0] -3 ) return 0.0;

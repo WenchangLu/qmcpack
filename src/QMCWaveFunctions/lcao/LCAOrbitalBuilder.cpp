@@ -383,76 +383,28 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
           if (!hin.push("LocalizedOrbitals"))
               PRE.error("Could not open basisset group in H5; Probably Corrupt H5 file", true);
           hin.read(Nb_centers, "NbCenters");
-          std::vector<int> num_orb_centers;
-          num_orb_centers.resize(Nb_centers);
-          hin.read(num_orb_centers, "NumOrbCenters");
 
-          hin.read(nspins, "number_of_spins");
           hin.read(num_orbs, "number_of_orbitals");
 
-          double hgrid[3];
-          hin.read(hgrid[0], "hxgrid");
-          hin.read(hgrid[1], "hygrid");
-          hin.read(hgrid[2], "hzgrid");
+          std::vector<double> Cij;
 
-          std::vector<int> grid_dim, grid_start;
+          Cij.resize(num_orbs * num_orbs);
+          hin.read(Cij, "Cij");
 
-          grid_dim.resize(Nb_centers*3);
-          grid_start.resize(Nb_centers*3);
-          hin.read(grid_dim, "grid_dim");
-          hin.read(grid_start, "grid_start");
-
-          std::vector<double> Cij[2];
-          double r0[3];
-          std::vector<double> phi, phi_x, phi_y, phi_z, phi_L;
-          int nspin = 1;
-          for(int ispin = 0; ispin < nspin; ispin++)
+          int orb_index = 0;
+          for (int i = 0; i < Nb_centers; i++)
           {
-            std::string spin_group = "spin_" + std::to_string(ispin);
-            hin.push(spin_group.c_str());
-            
-            Cij[ispin].resize(num_orbs * num_orbs);
-            hin.read(Cij[ispin], "Cij");
 
-            int orb_index = 0;
-            for (int i = 0; i < Nb_centers; i++)
-            {
-                r0[0] = grid_start[i*3+0] * hgrid[0];
-                r0[1] = grid_start[i*3+1] * hgrid[1];
-                r0[2] = grid_start[i*3+2] * hgrid[2];
+              AOBasisBuilder<ao_type> any("b", myComm);
 
-                LOBasisSet[i].setBasisSet(num_orb_centers[i], r0, hgrid, &grid_dim[i*3]);
+              std::string orbital_group = "orbita_group_" + std::to_string(i);
+              hin.push(orbital_group);
+              ao_type* aoBasis = any.createAOSetH5(hin);
+              hin.pop();
 
-                phi.resize(grid_dim[i*3] * grid_dim[i*3+1] * grid_dim[i*3+2]);
-                phi_x.resize(grid_dim[i*3] * grid_dim[i*3+1] * grid_dim[i*3+2]);
-                phi_y.resize(grid_dim[i*3] * grid_dim[i*3+1] * grid_dim[i*3+2]);
-                phi_z.resize(grid_dim[i*3] * grid_dim[i*3+1] * grid_dim[i*3+2]);
-                phi_L.resize(grid_dim[i*3] * grid_dim[i*3+1] * grid_dim[i*3+2]);
-                for(int st = 0; st < num_orb_centers[i]; st++)
-                {
-                    std::string  orb= "orbital_" + std::to_string(orb_index);
-                    std::string  orb_x= "orbital_x_" + std::to_string(orb_index);
-                    std::string  orb_y= "orbital_y_" + std::to_string(orb_index);
-                    std::string  orb_z= "orbital_z_" + std::to_string(orb_index);
-                    std::string  orb_L= "orbital_L_" + std::to_string(orb_index);
-                    hin.read(phi, orb);
-                    hin.read(phi_x, orb_x);
-                    hin.read(phi_y, orb_y);
-                    hin.read(phi_z, orb_z);
-                    hin.read(phi_L, orb_L);
-                    for(size_t idx = 0; idx < phi.size(); idx++)
-                    {
-                        LOBasisSet[i].Vgrids[st][idx] =  phi[idx];
-                        LOBasisSet[i].Vgrids_x[st][idx] =  phi_x[idx];
-                        LOBasisSet[i].Vgrids_y[st][idx] =  phi_y[idx];
-                        LOBasisSet[i].Vgrids_z[st][idx] =  phi_z[idx];
-                        LOBasisSet[i].Vgrids_L[st][idx] =  phi_L[idx];
-                    }
-                    orb_index++;
-                }
-            } 
-            hin.pop();
-          }
+              int activeCenter = i;
+              mBasisSet->add(activeCenter, aoBasis);
+          } 
           hin.pop();
           hin.close();
       }

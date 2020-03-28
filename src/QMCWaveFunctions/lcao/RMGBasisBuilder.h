@@ -40,17 +40,48 @@ public:
       : MPIObjectBase(comm)
   { }
 
-  bool put(xmlNodePtr cur)
-  { }
   bool putH5(hdf_archive& hin)
   { }
 
-  COT* createAOSet(xmlNodePtr cur)
-  { }
   COT* createAOSetH5(hdf_archive& hin)
   { 
-    //RMGORBITALS = new COT()
-    }
+
+      int num_orb;
+      hin.read(num_orb, "NumOrbThiscenter");
+      double hgrid[3];
+      hin.read(hgrid[0], "hxgrid");
+      hin.read(hgrid[1], "hygrid");
+      hin.read(hgrid[2], "hzgrid");
+
+      int grid_dim[3], grid_start[3];
+
+      hin.read(grid_dim[0], "grid_dimx");
+      hin.read(grid_dim[1], "grid_dimy");
+      hin.read(grid_dim[2], "grid_dimz");
+      hin.read(grid_start[0], "grid_start_x");
+      hin.read(grid_start[1], "grid_start_y");
+      hin.read(grid_start[2], "grid_start_z");
+      double r0[3];
+      r0[0] = grid_start[0] * hgrid[0];
+      r0[1] = grid_start[1] * hgrid[1];
+      r0[2] = grid_start[2] * hgrid[2];
+
+      COT* aoBasis = new COT(num_orb, r0, hgrid, grid_dim);
+      for(int st = 0; st < num_orb; st++)
+      {
+          std::string  orb= "orbital_" + std::to_string(st);
+          std::string  orb_x= "orbital_x_" + std::to_string(st);
+          std::string  orb_y= "orbital_y_" + std::to_string(st);
+          std::string  orb_z= "orbital_z_" + std::to_string(st);
+          std::string  orb_L= "orbital_L_" + std::to_string(st);
+          hin.read(aoBasis->Vgrids[st]  ,   orb);
+          hin.read(aoBasis->Vgrids_x[st], orb_x);
+          hin.read(aoBasis->Vgrids_y[st], orb_y);
+          hin.read(aoBasis->Vgrids_z[st], orb_z);
+          hin.read(aoBasis->Vgrids_L[st], orb_L);
+      }
+        return aoBasis;
+  }
 };
 
 } // namespace qmcplusplus
