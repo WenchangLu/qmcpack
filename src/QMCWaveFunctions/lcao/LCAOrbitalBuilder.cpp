@@ -367,37 +367,47 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
 
   basis_type* mBasisSet = new basis_type(sourcePtcl, targetPtcl);
 
+  /** process atomicBasisSet per ion species */
+  app_log() << "Reading BasisSet from HDF5 file:" << h5_path << std::endl;
+
   //list of built centers
-  int RMG = 1;
+  bool RMG = false;
+  hdf_archive hin(myComm);
+  if (myComm->rank() == 0)
+  {
+      if (!hin.open(h5_path, H5F_ACC_RDONLY))
+          PRE.error("Could not open H5 file", true);
+      if (!hin.push("basisset"))
+      {
+          RMG = false;
+      }
+      else if (!hin.push("LocalizedOrbitals"))
+      {
+          RMG = true; 
+      }
+      else
+          PRE.error("Could not open basisset or RMG group in H5; Probably Corrupt H5 file", true);
+  }
   if(RMG)
   {
       app_log() << "Reading RMG BasisSet from HDF5 file:" << h5_path << std::endl;
-      int Nb_centers(0), nspins, num_orbs;
+      int Nb_centers(0), num_orbs;
 
-      hdf_archive hin(myComm);
       if (myComm->rank() == 0)
       {
-        
-          if (!hin.open(h5_path, H5F_ACC_RDONLY))
-              PRE.error("Could not open H5 file", true);
-          if (!hin.push("LocalizedOrbitals"))
-              PRE.error("Could not open basisset group in H5; Probably Corrupt H5 file", true);
           hin.read(Nb_centers, "NbCenters");
 
-          hin.read(num_orbs, "number_of_orbitals");
+          std::string spin_group = "spin_" + std::to_string(0);
+          hin.push(spin_group);
 
-          std::vector<double> Cij;
-
-          Cij.resize(num_orbs * num_orbs);
-          hin.read(Cij, "Cij");
-
-          int orb_index = 0;
+          if (Nb_centers < 1)
+              PRE.error("Missing NbCenters attribute of RMGatomicBasisSet.", true);
           for (int i = 0; i < Nb_centers; i++)
           {
 
               AOBasisBuilder<ao_type> any("b", myComm);
 
-              std::string orbital_group = "orbita_group_" + std::to_string(i);
+              std::string orbital_group = "orbital_group_" + std::to_string(i);
               hin.push(orbital_group);
               ao_type* aoBasis = any.createAOSetH5(hin);
               hin.pop();
@@ -406,13 +416,12 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
               mBasisSet->add(activeCenter, aoBasis);
           } 
           hin.pop();
+          hin.pop();
           hin.close();
       }
-
-      myComm->bcast(Nb_centers);
-      if (Nb_centers < 1)
-          PRE.error("Missing NbCenters attribute of atomicBasisSet.", true);
+      //myComm->bcast(Nb_centers);
   }
+
   else
   {
       std::vector<std::string> ao_built_centers;
@@ -420,16 +429,8 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
       int Nb_Elements(0);
       std::string basiset_name;
 
-      /** process atomicBasisSet per ion species */
-      app_log() << "Reading BasisSet from HDF5 file:" << h5_path << std::endl;
-
-      hdf_archive hin(myComm);
       if (myComm->rank() == 0)
       {
-          if (!hin.open(h5_path, H5F_ACC_RDONLY))
-              PRE.error("Could not open H5 file", true);
-          if (!hin.push("basisset"))
-              PRE.error("Could not open basisset group in H5; Probably Corrupt H5 file", true);
           hin.read(Nb_Elements, "NbElements");
       }
 

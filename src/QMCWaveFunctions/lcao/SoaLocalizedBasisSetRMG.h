@@ -94,6 +94,7 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
     BasisOffset[0] = 0;
     for (int c = 0; c < NumCenters; c++)
     {
+      std::cout << "aaa " << c <<"  " <<BasisOffset[c] << std::endl;
       BasisOffset[c + 1] = BasisOffset[c] + LOBasisSet[c]->getBasisSetSize();
     }
     BasisSetSize = BasisOffset[NumCenters];
