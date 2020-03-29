@@ -48,25 +48,18 @@ public:
 
       int num_orb;
       hin.read(num_orb, "NumOrbThiscenter");
-      double hgrid[3];
-      hin.read(hgrid[0], "hxgrid");
-      hin.read(hgrid[1], "hygrid");
-      hin.read(hgrid[2], "hzgrid");
+      std::vector<double> hgrid(3);
+      std::vector<int> grid_dim(3), grid_start(3);
+      hin.read(hgrid, "hgrid");
 
-      int grid_dim[3], grid_start[3];
-
-      hin.read(grid_dim[0], "grid_dimx");
-      hin.read(grid_dim[1], "grid_dimy");
-      hin.read(grid_dim[2], "grid_dimz");
-      hin.read(grid_start[0], "grid_start_x");
-      hin.read(grid_start[1], "grid_start_y");
-      hin.read(grid_start[2], "grid_start_z");
+      hin.read(grid_dim, "grid_dim");
+      hin.read(grid_start, "grid_start");
       double r0[3];
       r0[0] = grid_start[0] * hgrid[0];
       r0[1] = grid_start[1] * hgrid[1];
       r0[2] = grid_start[2] * hgrid[2];
 
-      COT* aoBasis = new COT(num_orb, r0, hgrid, grid_dim);
+      COT* aoBasis = new COT(num_orb, r0, hgrid.data(), grid_dim.data());
       for(int st = 0; st < num_orb; st++)
       {
           std::string  orb= "orbital_" + std::to_string(st);
@@ -80,7 +73,7 @@ public:
           hin.read(aoBasis->Vgrids_z[st], orb_z);
           hin.read(aoBasis->Vgrids_L[st], orb_L);
       }
-        return aoBasis;
+      return aoBasis;
   }
 };
 

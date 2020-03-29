@@ -377,17 +377,21 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
   {
       if (!hin.open(h5_path, H5F_ACC_RDONLY))
           PRE.error("Could not open H5 file", true);
+
       if (!hin.push("basisset"))
       {
           RMG = false;
+          std::cout<<  RMG<< " ccc" << std::endl;
       }
-      else if (!hin.push("LocalizedOrbitals"))
+      else if (hin.push("LocalizedOrbitals"))
       {
           RMG = true; 
+          std::cout<<  RMG<< " bbb" << std::endl;
       }
       else
           PRE.error("Could not open basisset or RMG group in H5; Probably Corrupt H5 file", true);
   }
+
   if(RMG)
   {
       app_log() << "Reading RMG BasisSet from HDF5 file:" << h5_path << std::endl;
