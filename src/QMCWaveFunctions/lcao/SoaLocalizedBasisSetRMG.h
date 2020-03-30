@@ -119,13 +119,16 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
     const auto& dist    = (P.activePtcl == iat) ? d_table.getTempDists() : d_table.getDistRow(iat);
     const auto& displ   = (P.activePtcl == iat) ? d_table.getTempDispls() : d_table.getDisplRow(iat);
 
+  //  static size_t  count = 0;
+  //  std::cout<<"RMG VGL count " << count++<< std::endl;
+
     PosType Tv;
     for (int c = 0; c < NumCenters; c++)
     {
         Tv[0] = (ions_.R[c][0] - coordR[0]) - displ[c][0];
         Tv[1] = (ions_.R[c][1] - coordR[1]) - displ[c][1];
         Tv[2] = (ions_.R[c][2] - coordR[2]) - displ[c][2];
-        LOBasisSet[c]->evaluateVGL(P.Lattice, dist[c], displ[c], BasisOffset[c], vgl, Tv);
+        LOBasisSet[c]->evaluateVGL(P.Lattice, dist[c], coordR, BasisOffset[c], vgl, Tv);
     }
 
 
@@ -172,13 +175,17 @@ struct SoaLocalizedBasisSet<RMGBasisSet<T>, ORBT> : public SoaBasisSetBase<ORBT>
     const auto& dist    = (P.activePtcl == iat) ? d_table.getTempDists() : d_table.getDistRow(iat);
     const auto& displ   = (P.activePtcl == iat) ? d_table.getTempDispls() : d_table.getDisplRow(iat);
 
+   // static size_t  count = 0;
+   // std::cout<<"RMG count " << count++<< std::endl;
+
     PosType Tv;
+
     for (int c = 0; c < NumCenters; c++)
     {
         Tv[0] = (ions_.R[c][0] - coordR[0]) - displ[c][0];
         Tv[1] = (ions_.R[c][1] - coordR[1]) - displ[c][1];
         Tv[2] = (ions_.R[c][2] - coordR[2]) - displ[c][2];
-        LOBasisSet[c]->evaluateV(P.Lattice, dist[c], displ[c], vals + BasisOffset[c], Tv);
+        LOBasisSet[c]->evaluateV(P.Lattice, dist[c], coordR, vals + BasisOffset[c], Tv);
     }
       // Ye: needs implemenation
   }
