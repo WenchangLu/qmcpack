@@ -49,18 +49,19 @@ public:
   {
     for(int i = 0; i < 3; i++)
     {
-      this->r0[i] = r0_in[i];
-      this->r1[i] = r0_in[i] + num_grid_in[i] * hgrid_in[i];
-      this->hgrid[i] = hgrid_in[i];
-      this->num_grid[i] = num_grid_in[i]; 
+      r0[i] = r0_in[i];
+      r1[i] = r0_in[i] + num_grid_in[i] * hgrid_in[i];
+      hgrid[i] = hgrid_in[i];
+      num_grid[i] = num_grid_in[i]; 
     }
 
-    this->BasisSetSize = num_orbitals_thiscenter;
-    Vgrids.resize(this->BasisSetSize);
-    Vgrids_x.resize(this->BasisSetSize);
-    Vgrids_y.resize(this->BasisSetSize);
-    Vgrids_z.resize(this->BasisSetSize);
-    Vgrids_L.resize(this->BasisSetSize);
+
+    BasisSetSize = num_orbitals_thiscenter;
+    Vgrids.resize(BasisSetSize);
+    Vgrids_x.resize(BasisSetSize);
+    Vgrids_y.resize(BasisSetSize);
+    Vgrids_z.resize(BasisSetSize);
+    Vgrids_L.resize(BasisSetSize);
 
     for(int ib = 0; ib < BasisSetSize; ib++)
     {
@@ -102,22 +103,20 @@ public:
           double Val[3], disp[3]{0.0, 0.0, 0.0};
           int grid_pos[3]{-1,-1,-1};
          //check where the real space point dr map to the orbital's real space grid and displacment.
-          for(int i = -1; i <= 1; i++)
-              for(int j = -1; j <= 1; j++)
-                  for(int k = -1; k <= 1; k++)
+            int i(0), j(0), k(0);
                   {
-                      Val[0] = dr[0] + i * lattice.R(0, 0) + j * lattice.R(1, 0) + k * lattice.R(2, 0);
-                      Val[1] = dr[1] + i * lattice.R(0, 1) + j * lattice.R(1, 1) + k * lattice.R(2, 1);
-                      Val[2] = dr[2] + i * lattice.R(0, 2) + j * lattice.R(1, 2) + k * lattice.R(2, 2);
+                      Val[0] = dr[0] + i * lattice.R(0, 0) + j * lattice.R(1, 0) + k * lattice.R(2, 0) ;
+                      Val[1] = dr[1] + i * lattice.R(0, 1) + j * lattice.R(1, 1) + k * lattice.R(2, 1) ;
+                      Val[2] = dr[2] + i * lattice.R(0, 2) + j * lattice.R(1, 2) + k * lattice.R(2, 2) ;
                       if(Val[0] > r0[0] && Val[0] < r1[0] && Val[1] > r0[1] && Val[1] < r1[1] && Val[2] > r0[2] && Val[2] < r1[2])
                       {
-                          grid_pos[0] = Val[0] / hgrid[0];
-                          disp[0] = Val[0] - grid_pos[0] * hgrid[0];
-                          grid_pos[1] = Val[1] / hgrid[1];
-                          disp[1] = Val[1] - grid_pos[1] * hgrid[1];
-                          grid_pos[2] = Val[2] / hgrid[2];
-                          disp[2] = Val[2] - grid_pos[2] * hgrid[2];
-                          break;
+                          grid_pos[0] = (Val[0]-r0[0]) / hgrid[0];
+                          disp[0] = Val[0]-r0[0] - grid_pos[0] * hgrid[0];
+                          grid_pos[1] = (Val[1]-r0[1]) / hgrid[1];
+                          disp[1] = Val[1]-r0[1] - grid_pos[1] * hgrid[1];
+                          grid_pos[2] = (Val[2]-r0[2]) / hgrid[2];
+                          disp[2] = Val[2]-r0[2] - grid_pos[2] * hgrid[2];
+                       //   break;
                       }
                   }
 
@@ -139,15 +138,15 @@ public:
           }
 
 
-          if(grid_pos[0] > 0 || grid_pos[1] > 0 || grid_pos[2] > 0)
+          if(grid_pos[0] > 0 && grid_pos[1] > 0 && grid_pos[2] > 0)
           {
               for(int ib = 0; ib < BasisSetSize; ib++)
               {
-                  phi[ib] = interpolate_value(grid_pos, disp, Vgrids[ib]); 
-                  dphi_x[ib] = interpolate_value(grid_pos, disp, Vgrids_x[ib]); 
-                  dphi_y[ib] = interpolate_value(grid_pos, disp, Vgrids_y[ib]); 
-                  dphi_z[ib] = interpolate_value(grid_pos, disp, Vgrids_z[ib]); 
-                  d2phi[ib] = interpolate_value(grid_pos, disp, Vgrids_L[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids[ib], phi[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids_x[ib], dphi_x[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids_y[ib], dphi_y[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids_z[ib], dphi_z[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids_L[ib], d2phi[ib]); 
               }
 
 
@@ -176,25 +175,27 @@ public:
           double Val[3], disp[3]{0.0, 0.0, 0.0};
           int grid_pos[3]{-1,-1,-1};
          //check where the real space point dr map to the orbital's real space grid and displacment.
-          for(int i = -1; i <= 1; i++)
-              for(int j = -1; j <= 1; j++)
-                  for(int k = -1; k <= 1; k++)
+          //for(int i = -1; i <= 1; i++)
+          //    for(int j = -1; j <= 1; j++)
+          //        for(int k = -1; k <= 1; k++)
+            int i(0), j(0), k(0);
                   {
-                      Val[0] = dr[0] + i * lattice.R(0, 0) + j * lattice.R(1, 0) + k * lattice.R(2, 0);
-                      Val[1] = dr[1] + i * lattice.R(0, 1) + j * lattice.R(1, 1) + k * lattice.R(2, 1);
-                      Val[2] = dr[2] + i * lattice.R(0, 2) + j * lattice.R(1, 2) + k * lattice.R(2, 2);
+                      Val[0] = dr[0] + i * lattice.R(0, 0) + j * lattice.R(1, 0) + k * lattice.R(2, 0) ;
+                      Val[1] = dr[1] + i * lattice.R(0, 1) + j * lattice.R(1, 1) + k * lattice.R(2, 1) ;
+                      Val[2] = dr[2] + i * lattice.R(0, 2) + j * lattice.R(1, 2) + k * lattice.R(2, 2) ;
                       if(Val[0] > r0[0] && Val[0] < r1[0] && Val[1] > r0[1] && Val[1] < r1[1] && Val[2] > r0[2] && Val[2] < r1[2])
                       {
-                          grid_pos[0] = Val[0] / hgrid[0];
-                          disp[0] = Val[0] - grid_pos[0] * hgrid[0];
-                          grid_pos[1] = Val[1] / hgrid[1];
-                          disp[1] = Val[1] - grid_pos[1] * hgrid[1];
-                          grid_pos[2] = Val[2] / hgrid[2];
-                          disp[2] = Val[2] - grid_pos[2] * hgrid[2];
-                          break;
+                          grid_pos[0] = (Val[0]-r0[0]) / hgrid[0];
+                          disp[0] = Val[0]-r0[0] - grid_pos[0] * hgrid[0];
+                          grid_pos[1] = (Val[1]-r0[1]) / hgrid[1];
+                          disp[1] = Val[1]-r0[1] - grid_pos[1] * hgrid[1];
+                          grid_pos[2] = (Val[2]-r0[2]) / hgrid[2];
+                          disp[2] = Val[2]-r0[2] - grid_pos[2] * hgrid[2];
+                       //   break;
                       }
                   }
 
+      //std::cout<<  grid_pos[0] << " " << grid_pos[1] << " "<< grid_pos[2]<< " " <<dr[0] << " " <<dr[1] <<" " <<dr[2]<< " "<<disp[0]<<std::endl;
          // set oiuters to vgl datatype
 
           for(int ib = 0; ib < BasisSetSize; ib++)
@@ -203,11 +204,11 @@ public:
           }
 
 
-          if(grid_pos[0] > 0 || grid_pos[1] > 0 || grid_pos[2] > 0)
+          if(grid_pos[0] > 0 && grid_pos[1] > 0 && grid_pos[2] > 0)
           {
               for(int ib = 0; ib < BasisSetSize; ib++)
               {
-                  phi[ib] = (VT)interpolate_value(grid_pos, disp, Vgrids[ib]); 
+                  interpolate_value(grid_pos, disp, Vgrids[ib], phi[ib]); 
               }
 
 
@@ -217,39 +218,42 @@ public:
           // must be implemented. interface arguments needs change
       }
 
-  VALT interpolate_value(int grid_pos[3], double disp[3], std::vector<VALT> vgrids)
+  inline void interpolate_value(int grid_pos[3], double disp[3], std::vector<VALT> vgrids, VALT &val)
   {
-      // at the boundary all values are zero
-      if(grid_pos[0] < 2 || grid_pos[0] > num_grid[0] -3 ) return 0.0;
-      if(grid_pos[1] < 2 || grid_pos[1] > num_grid[1] -3 ) return 0.0;
-      if(grid_pos[2] < 2 || grid_pos[2] > num_grid[2] -3 ) return 0.0;
+      int idx = grid_pos[0] * num_grid[1] * num_grid[2] + grid_pos[1] * num_grid[2] + grid_pos[2];
+      val = vgrids[idx];
+ //   return;
+ //   // at the boundary all values are zero
+ //   if(grid_pos[0] < 2 || grid_pos[0] > num_grid[0] -3 ) val =  0.0;
+ //   if(grid_pos[1] < 2 || grid_pos[1] > num_grid[1] -3 ) val =  0.0;
+ //   if(grid_pos[2] < 2 || grid_pos[2] > num_grid[2] -3 ) val =  0.0;
 
-      // cubic interpolation
-      double cc[4][3];
-      for(int i = 0; i < 3; i++)
-      {
-          double frac = disp[i]/hgrid[i];
-          cc[0][i] = -frac * (1.0 - frac) * (2.0 - frac) / 6.0;
-          cc[1][i] = (1.0 + frac) * (1.0 - frac) * (2.0 - frac) / 2.0;
-          cc[2][i] = (1.0 + frac) * frac * (2.0 - frac) / 2.0;
-          cc[3][i] = -(1.0 + frac) * frac * (1.0 - frac) / 6.0;
-      }
+ //   // cubic interpolation
+ //   double cc[4][3];
+ //   for(int i = 0; i < 3; i++)
+ //   {
+ //       double frac = disp[i]/hgrid[i];
+ //       cc[0][i] = -frac * (1.0 - frac) * (2.0 - frac) / 6.0;
+ //       cc[1][i] = (1.0 + frac) * (1.0 - frac) * (2.0 - frac) / 2.0;
+ //       cc[2][i] = (1.0 + frac) * frac * (2.0 - frac) / 2.0;
+ //       cc[3][i] = -(1.0 + frac) * frac * (1.0 - frac) / 6.0;
+ //   }
 
 
-      VALT result = 0.0;
-      for(int i = 0; i < 4; i++)
-          for(int j = 0; j < 4; j++)
-              for(int k = 0; k < 4; k++)
-              {
-                  int ix = grid_pos[0] +i -1;
-                  int iy = grid_pos[1] +j -1;
-                  int iz = grid_pos[2] +k -1;
-                  int idx = ix * num_grid[1] * num_grid[2] + iy * num_grid[2] + iz;
-                  double coeff = cc[i][0] * cc[j][1] * cc[k][2];
-                  result += coeff * vgrids[idx];
-              }
+ //   VALT result = 0.0;
+ //   for(int i = 0; i < 4; i++)
+ //       for(int j = 0; j < 4; j++)
+ //           for(int k = 0; k < 4; k++)
+ //           {
+ //               int ix = grid_pos[0] +i -1;
+ //               int iy = grid_pos[1] +j -1;
+ //               int iz = grid_pos[2] +k -1;
+ //               int idx = ix * num_grid[1] * num_grid[2] + iy * num_grid[2] + iz;
+ //               double coeff = cc[i][0] * cc[j][1] * cc[k][2];
+ //               result += coeff * vgrids[idx];
+ //           }
 
-      return result;
+ //   val = result;
 
   }
 };

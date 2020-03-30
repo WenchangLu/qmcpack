@@ -154,6 +154,8 @@ LCAOrbitalBuilder::LCAOrbitalBuilder(ParticleSet& els, ParticleSet& ions, Commun
       radialOrbType = 1;
     if (keyOpt == "STO")
       radialOrbType = 2;
+    if (keyOpt == "RMG")
+      radialOrbType = 3;
   }
 
   if (radialOrbType < 0)
@@ -250,8 +252,11 @@ void LCAOrbitalBuilder::loadBasisSetFromH5()
   }
 
   // RMG entry, bypass everything else
-  myBasisSet = createBasisSetH5<0, 2>();
-  return;
+  if(radialOrbType == 3)
+  {
+      myBasisSet = createBasisSetH5<0, 2>();
+      return;
+  }
 
   hdf_archive hin(myComm);
   int ylm = -1;
@@ -371,35 +376,27 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
   app_log() << "Reading BasisSet from HDF5 file:" << h5_path << std::endl;
 
   //list of built centers
-  bool RMG = false;
   hdf_archive hin(myComm);
+  int Nb_centers(0);
+  int Nb_Elements(0);
   if (myComm->rank() == 0)
   {
       if (!hin.open(h5_path, H5F_ACC_RDONLY))
           PRE.error("Could not open H5 file", true);
 
       if (!hin.push("basisset"))
-      {
-          RMG = false;
-          std::cout<<  RMG<< " ccc" << std::endl;
-      }
-      else if (hin.push("LocalizedOrbitals"))
-      {
-          RMG = true; 
-          std::cout<<  RMG<< " bbb" << std::endl;
-      }
-      else
           PRE.error("Could not open basisset or RMG group in H5; Probably Corrupt H5 file", true);
+      hin.read(Nb_Elements, "NbElements");
+      if(Nb_Elements <= 0) 
+          hin.read(Nb_centers, "NbCenters");
   }
 
-  if(RMG)
+  if(Nb_Elements <= 0)
   {
       app_log() << "Reading RMG BasisSet from HDF5 file:" << h5_path << std::endl;
-      int Nb_centers(0), num_orbs;
 
       if (myComm->rank() == 0)
       {
-          hin.read(Nb_centers, "NbCenters");
 
           std::string spin_group = "spin_" + std::to_string(0);
           hin.push(spin_group);
@@ -430,13 +427,8 @@ LCAOrbitalBuilder::BasisSet_t* LCAOrbitalBuilder::createBasisSetH5()
   {
       std::vector<std::string> ao_built_centers;
 
-      int Nb_Elements(0);
       std::string basiset_name;
 
-      if (myComm->rank() == 0)
-      {
-          hin.read(Nb_Elements, "NbElements");
-      }
 
       myComm->bcast(Nb_Elements);
       if (Nb_Elements < 1)
